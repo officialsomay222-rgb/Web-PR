@@ -1,0 +1,6 @@
+{
+  "name": "Live Web Playground",
+  "description": "A real-time HTML, CSS, and JavaScript previewer and editor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

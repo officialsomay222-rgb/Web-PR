@@ -1,0 +1,210 @@
+<div class="flex justify-center items-center h-screen bg-neutral-950 font-sans text-neutral-100 overflow-hidden sm:p-4 selection:bg-indigo-500/30">
+  <!-- Mobile Container -->
+  <div class="w-full h-full max-w-md bg-neutral-900 sm:rounded-[2rem] sm:border-[6px] sm:border-neutral-800 shadow-2xl overflow-hidden relative flex flex-col">
+    
+    @if (currentView() === 'home') {
+      <!-- Home View -->
+      <div class="flex flex-col h-full bg-neutral-950">
+        <!-- Header -->
+        <header class="px-6 pt-10 pb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-medium tracking-tight text-white">Projects</h1>
+            <p class="text-neutral-500 text-sm mt-1">Your code playground</p>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+            <mat-icon>code</mat-icon>
+          </div>
+        </header>
+
+        <!-- Search -->
+        <div class="px-6 pb-6">
+          <div class="relative group">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-indigo-400 transition-colors">search</mat-icon>
+            <input 
+              [formControl]="searchControl"
+              type="text" 
+              placeholder="Search projects..." 
+              class="w-full bg-neutral-900 border border-neutral-800 text-neutral-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder:text-neutral-600 text-sm"
+            />
+          </div>
+        </div>
+
+        <!-- Project List -->
+        <div class="flex-1 overflow-y-auto px-6 pb-24 space-y-3">
+          @if (filteredProjects().length === 0) {
+            <div class="flex flex-col items-center justify-center h-48 text-neutral-600 space-y-4">
+              <div class="w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center">
+                <mat-icon class="text-2xl">folder_open</mat-icon>
+              </div>
+              <p class="text-sm">No projects found.</p>
+            </div>
+          } @else {
+            @for (project of filteredProjects(); track project.id) {
+              <div 
+                (click)="openProject(project.id)"
+                class="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-colors group"
+              >
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-xl bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:text-white group-hover:bg-indigo-500/20 transition-colors">
+                    <mat-icon>insert_drive_file</mat-icon>
+                  </div>
+                  <div>
+                    <h3 class="font-medium text-neutral-200 text-[15px] leading-tight mb-1">{{ project.name }}</h3>
+                    <p class="text-xs text-neutral-500">{{ project.lastModified | date:'mediumDate' }}</p>
+                  </div>
+                </div>
+                <button (click)="deleteProject(project.id, $event)" class="text-neutral-600 hover:text-red-400 p-2 rounded-full hover:bg-neutral-800 transition-colors">
+                  <mat-icon class="text-[20px] w-[20px] h-[20px]">delete_outline</mat-icon>
+                </button>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- FAB Create -->
+        <button 
+          (click)="createProject()"
+          class="absolute bottom-8 right-8 w-14 h-14 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-10"
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+        <!-- Fade out gradient for scroll list -->
+        <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-neutral-950 to-transparent pointer-events-none"></div>
+      </div>
+    }
+
+    @if (currentView() === 'editor') {
+      <!-- Editor View -->
+      <div class="flex flex-col h-full bg-[#1e1e1e]">
+        <!-- Editor Header -->
+        <header class="flex items-center justify-between px-4 py-3 bg-[#1e1e1e] border-b border-[#2d2d2d] z-10">
+          <div class="flex items-center gap-2">
+            <button (click)="closeProject()" class="p-2 -ml-2 text-neutral-400 hover:text-white rounded-full hover:bg-[#2d2d2d] transition-colors">
+              <mat-icon>arrow_back</mat-icon>
+            </button>
+            <input 
+              type="text"
+              [value]="activeProject()?.name"
+              (blur)="renameProject(activeProject()!.id, $any($event.target).value)"
+              (keydown.enter)="$any($event.target).blur()"
+              class="bg-transparent text-white font-medium focus:outline-none focus:bg-[#2d2d2d] px-2 py-1 rounded w-32 md:w-48 text-[15px]"
+            />
+          </div>
+          <div class="flex items-center gap-1">
+             <button class="p-2 text-neutral-400 hover:text-white rounded-full hover:bg-[#2d2d2d] transition-colors">
+                <mat-icon>settings</mat-icon>
+             </button>
+          </div>
+        </header>
+
+        <!-- Tabs -->
+        <div class="flex items-center justify-between px-4 pt-3 pb-2 bg-[#1e1e1e] border-b border-[#2d2d2d]">
+          <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+            <button 
+              (click)="activeTab.set('html')"
+              [class.bg-[#3d3d3d]]="activeTab() === 'html'"
+              [class.text-white]="activeTab() === 'html'"
+              [class.bg-transparent]="activeTab() !== 'html'"
+              [class.text-[#858585]]="activeTab() !== 'html'"
+              class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors border border-[#3d3d3d] hover:text-white shrink-0"
+            >
+              index.html
+            </button>
+            <button 
+              (click)="activeTab.set('css')"
+              [class.bg-[#3d3d3d]]="activeTab() === 'css'"
+              [class.text-white]="activeTab() === 'css'"
+              [class.bg-transparent]="activeTab() !== 'css'"
+              [class.text-[#858585]]="activeTab() !== 'css'"
+              class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors border border-[#3d3d3d] hover:text-white shrink-0"
+            >
+              styles.css
+            </button>
+            <button 
+              (click)="activeTab.set('js')"
+              [class.bg-[#3d3d3d]]="activeTab() === 'js'"
+              [class.text-white]="activeTab() === 'js'"
+              [class.bg-transparent]="activeTab() !== 'js'"
+              [class.text-[#858585]]="activeTab() !== 'js'"
+              class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors border border-[#3d3d3d] hover:text-white shrink-0"
+            >
+              script.js
+            </button>
+          </div>
+          
+          <!-- Delete Current Tab Code -->
+          <button 
+            (click)="clearCurrentTab()"
+            class="p-1.5 text-neutral-500 hover:text-red-400 rounded-lg hover:bg-red-400/10 transition-colors ml-2 shrink-0 flex items-center justify-center"
+            title="Clear current tab code"
+          >
+            <mat-icon class="text-[18px] w-[18px] h-[18px]">delete_outline</mat-icon>
+          </button>
+        </div>
+
+        <!-- Code Area -->
+        <div class="flex-1 relative bg-[#1e1e1e]">
+          @if (activeTab() === 'html') {
+            <textarea
+              [formControl]="htmlControl"
+              class="absolute inset-0 w-full h-full p-5 pb-24 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-[14px] leading-relaxed resize-none focus:outline-none"
+              spellcheck="false"
+            ></textarea>
+          }
+          @if (activeTab() === 'css') {
+            <textarea
+              [formControl]="cssControl"
+              class="absolute inset-0 w-full h-full p-5 pb-24 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-[14px] leading-relaxed resize-none focus:outline-none"
+              spellcheck="false"
+            ></textarea>
+          }
+          @if (activeTab() === 'js') {
+            <textarea
+              [formControl]="jsControl"
+              class="absolute inset-0 w-full h-full p-5 pb-24 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-[14px] leading-relaxed resize-none focus:outline-none"
+              spellcheck="false"
+            ></textarea>
+          }
+        </div>
+
+        <!-- FAB Preview -->
+        <button 
+          (click)="showPreview()"
+          class="absolute bottom-8 right-8 px-5 py-3.5 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 flex items-center gap-2 font-medium transition-transform hover:scale-105 active:scale-95"
+        >
+          <mat-icon class="text-[20px] w-[20px] h-[20px]">play_arrow</mat-icon>
+          Preview
+        </button>
+      </div>
+    }
+
+    @if (currentView() === 'preview') {
+      <!-- Preview View -->
+      <div class="flex flex-col h-full bg-white relative">
+        
+        <!-- Preview Header / Controls -->
+        <header class="absolute top-0 left-0 right-0 h-14 bg-white/90 backdrop-blur-md flex items-center px-4 justify-between z-20 border-b border-neutral-200">
+           <button (click)="closePreview()" class="text-neutral-800 flex items-center gap-2 hover:bg-neutral-100 px-3 py-1.5 rounded-full transition-colors text-sm font-medium">
+             <mat-icon class="text-[20px] w-[20px] h-[20px]">close</mat-icon>
+             Code
+           </button>
+           <div class="text-neutral-400 text-[11px] font-mono uppercase tracking-wider font-medium flex items-center gap-1.5">
+             <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+             Live Result
+           </div>
+        </header>
+
+        <!-- Iframe Container -->
+        <div class="flex-1 w-full h-full pt-14 bg-white">
+          <iframe
+            [srcdoc]="srcDoc()"
+            class="w-full h-full border-none bg-white"
+            title="Live Preview"
+            sandbox="allow-scripts allow-popups allow-modals"
+          ></iframe>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>
